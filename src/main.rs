@@ -14,7 +14,6 @@ fn main() {
 struct Player {
     id: i32,
     name: String,
-    score: i32,
 }
 
 impl Player {
@@ -22,15 +21,52 @@ impl Player {
         Player {
             id: player_id,
             name: player_name.clone(),
-            score: 0,
+        }
+    }
+}
+
+#[derive(Default, Clone)]
+struct MatchComponent {
+    player: Player,
+    score: i32,
+}
+
+#[derive(Clone)]
+struct Match {
+    id: i32,
+    components: Vec<MatchComponent>,
+}
+
+impl Match {
+    fn new(match_id: i32) -> Self {
+        Match {
+            id: match_id,
+            components: vec![],
+        }
+    }
+    fn new_with_players(players: &Vec<Player>, match_id: i32) -> Self {
+        let mut c = vec![];
+        for player in players {
+            c.push(
+                MatchComponent {
+                    player: player.clone(),
+                    score: 0,
+                }
+            );
+        }
+        Match {
+            id: match_id,
+            components: c,
         }
     }
 }
 
 #[derive(Default)]
 struct CompeteApp {
-    player_count: i32, // kept separate because of IDs
+    player_count: i32,
     players: Vec<Player>,
+    match_count: i32,
+    matches: Vec<Match>,
     player_edit_result: String,
 }
 
@@ -64,36 +100,53 @@ fn delete_player_by_id(vector: &Vec<Player>, player_id: i32) -> Vec<Player>{
 impl eframe::App for CompeteApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let mut players = self.players.clone();
+        let mut matches = self.matches.clone();
 
-        egui::CentralPanel::default().show(ctx, |cui| {
-            cui.heading("Compete-inator");
-            egui::Window::new("Players").show(ctx, |pui| {
-                for player in &(players.clone()) {
-                    pui.horizontal(|hui| {
-                        hui.label(player.name.clone());
-                        if hui.button("🗑").clicked() {
-                            players = delete_player_by_id(&(players.clone()), player.id);
-                        }
-                    });
-
+        egui::CentralPanel::default()
+            .show(ctx, |cui| {
+                cui.heading("Compete-inator");
+                cui.separator();
+                if cui.button("Create Match").clicked() {
+                     matches.push(Match::new(self.match_count));
+                     self.match_count += 1;
                 }
-                let response = pui.add(
-                    egui::TextEdit::singleline(&mut self.player_edit_result)
-                        .hint_text("Enter player name...")
-                );
-                if response.lost_focus() && pui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    players.push(
-                        Player::new(
-                            self.player_edit_result.clone(),
-                            self.player_count,
-                        )
+                egui::Window::new("Players").show(ctx, |pui| {
+                    for player in &(players.clone()) {
+                        pui.horizontal(|hui| {
+                            hui.label(player.name.clone());
+                            if hui.button("🗑").clicked() {
+                                players = delete_player_by_id(&(players.clone()), player.id);
+                            }
+                        });
+
+                    }
+                    let response = pui.add(
+                        egui::TextEdit::singleline(&mut self.player_edit_result)
+                            .hint_text("Enter player name...")
                     );
-                    self.player_count += 1;
-                    self.player_edit_result = "".to_string();
+                    if response.lost_focus() && pui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        players.push(
+                            Player::new(
+                                self.player_edit_result.clone(),
+                                self.player_count,
+                            )
+                        );
+                        self.player_count += 1;
+                        self.player_edit_result = "".to_string();
+                    }
                 }
-            });
+            );
+
+            for mat in &(matches.clone()) {
+                egui::Window::new(format!("Match {}", mat.id))
+                    .show(ctx, |mui| {
+                        mui.label("Test");
+                    }
+                );
+            }
         });
 
         self.players = players;
+        self.matches = matches;
     }
 }
