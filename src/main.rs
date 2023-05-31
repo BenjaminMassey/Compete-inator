@@ -68,6 +68,7 @@ struct CompeteApp {
     match_count: i32,
     matches: Vec<Match>,
     player_edit_result: String,
+    selected: usize,
 }
 
 impl CompeteApp {
@@ -97,6 +98,14 @@ fn delete_player_by_id(vector: &Vec<Player>, player_id: i32) -> Vec<Player>{
     result
 }
 
+fn players_to_strings(players: &Vec<Player>) -> Vec<String> {
+    let mut result: Vec<String> = vec![];
+    for player in players {
+        result.push(player.name.clone());
+    }
+    result
+}
+
 impl eframe::App for CompeteApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let mut players = self.players.clone();
@@ -106,10 +115,10 @@ impl eframe::App for CompeteApp {
             .show(ctx, |cui| {
                 cui.heading("Compete-inator");
                 cui.separator();
-                if cui.button("Create Match").clicked() {
+                if cui.button("Create Match").clicked() && players.len() > 0 {
                      matches.push(Match::new(self.match_count));
                      self.match_count += 1;
-                }
+                } // TODO: messaging of some sort when no players failure
                 egui::Window::new("Players").show(ctx, |pui| {
                     for player in &(players.clone()) {
                         pui.horizontal(|hui| {
@@ -124,7 +133,8 @@ impl eframe::App for CompeteApp {
                         egui::TextEdit::singleline(&mut self.player_edit_result)
                             .hint_text("Enter player name...")
                     );
-                    if response.lost_focus() && pui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if response.lost_focus() && pui.input(|i| i.key_pressed(egui::Key::Enter))
+                        && self.player_edit_result.len() > 0 {
                         players.push(
                             Player::new(
                                 self.player_edit_result.clone(),
@@ -140,7 +150,18 @@ impl eframe::App for CompeteApp {
             for mat in &(matches.clone()) {
                 egui::Window::new(format!("Match {}", mat.id))
                     .show(ctx, |mui| {
-                        mui.label("Test");
+                        let mut alternatives: Vec<&str> = vec![];
+                        for player in &players {
+                            alternatives.push(&(player.name));
+                        }
+                        egui::ComboBox::from_id_source(mat.id)
+                            .selected_text(alternatives[self.selected])
+                            .show_index(
+                                mui,
+                                &mut self.selected,
+                                alternatives.len(),
+                                |i| alternatives[i]
+                            );
                     }
                 );
             }
