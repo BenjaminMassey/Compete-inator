@@ -1,4 +1,5 @@
 use eframe::egui;
+use substring::Substring;
 
 fn main() {
     let native_options = eframe::NativeOptions::default();
@@ -35,6 +36,7 @@ struct MatchComponent {
 struct Match {
     id: i32,
     components: Vec<MatchComponent>,
+    winner: Option<Player>,
 }
 
 impl Match {
@@ -42,6 +44,7 @@ impl Match {
         Match {
             id: match_id,
             components: vec![],
+            winner: None,
         }
     }
     fn new_with_players(players: &Vec<Player>, match_id: i32) -> Self {
@@ -57,6 +60,7 @@ impl Match {
         Match {
             id: match_id,
             components: c,
+            winner: None,
         }
     }
 }
@@ -158,42 +162,66 @@ impl eframe::App for CompeteApp {
             let mut mat_index = 0;
             for mat in &(matches.clone()) {
                 let mut components = mat.components.clone();
+                let mut winner: Option<Player> = mat.winner.clone();
 
                 egui::Window::new(format!("Match {}", mat.id))
                     .show(ctx, |mui| {
-                        let mut alternatives: Vec<&str> = vec![];
-                        for player in &players {
-                            alternatives.push(&(player.name));
-                        }
-                        mui.horizontal(
-                            |hui| {
-                                egui::ComboBox::from_id_source(mat.id)
-                                    .selected_text(alternatives[self.selected])
-                                    .show_index(
-                                        hui,
-                                        &mut self.selected,
-                                        alternatives.len(),
-                                        |i| alternatives[i]
-                                    );
-                                
-                                let skip = repeat_component(&(components.clone()), (&players[self.selected]).clone());
-                                if hui.button("Add").clicked() && !skip {
-                                    components.push(
-                                            MatchComponent {
-                                            player: (&players[self.selected]).clone(),
-                                            score: 0,
-                                        }
-                                    );
-                                }
+                        if winner.is_some() {
+                            let mut versus = "".to_string();
+                            for component in components.clone() {
+                                versus = format!("{} vs {}", versus, component.player.name.clone());
                             }
-                        );
-                        for component in &components {
-                            mui.label(component.player.name.clone());
+                            mui.label(versus.substring(4, versus.len()));
+                            mui.label(
+                                format!(
+                                    "{} won!",
+                                    (&winner).clone().unwrap().name.clone()
+                                )
+                            );
+                        }
+                        else {
+                            let mut alternatives: Vec<&str> = vec![];
+                            for player in &players {
+                                alternatives.push(&(player.name));
+                            }
+                            mui.horizontal(
+                                |hui| {
+                                    egui::ComboBox::from_id_source(mat.id)
+                                        .selected_text(alternatives[self.selected])
+                                        .show_index(
+                                            hui,
+                                            &mut self.selected,
+                                            alternatives.len(),
+                                            |i| alternatives[i]
+                                    );
+                                    
+                                    let skip = repeat_component(&(components.clone()), (&players[self.selected]).clone());
+                                    if hui.button("Add").clicked() && !skip {
+                                        components.push(
+                                                MatchComponent {
+                                                player: (&players[self.selected]).clone(),
+                                                score: 0,
+                                            }
+                                        );
+                                    }
+                                }
+                            );
+                            for component in &components {
+                                mui.horizontal(
+                                    |hui| {
+                                        hui.label(component.player.name.clone());
+                                        if winner.is_none() && hui.button("Declare Winner").clicked() {
+                                            winner = Some(component.player.clone());
+                                        }
+                                    }
+                                );
+                            }
                         }
                     }
                 );
 
                 matches[mat_index].components = components;
+                matches[mat_index].winner = winner;
                 mat_index += 1;
             }
         });
