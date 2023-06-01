@@ -10,7 +10,7 @@ fn main() {
 }
 
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 struct Player {
     id: i32,
     name: String,
@@ -78,14 +78,13 @@ impl CompeteApp {
 
 }
 
-fn delete_player_by_name(vector: &Vec<Player>, player_name: String) -> Vec<Player>{
-    let mut result: Vec<Player> = vec![];
+fn get_player_by_name(vector: &Vec<Player>, player_name: String) -> Option<Player>{
     for item in vector {
-        if item.name != player_name.clone() {
-            result.push(item.clone());
+        if item.name == player_name.clone() {
+            Some(item);
         }
     }
-    result
+    None
 }
 
 fn delete_player_by_id(vector: &Vec<Player>, player_id: i32) -> Vec<Player>{
@@ -104,6 +103,15 @@ fn players_to_strings(players: &Vec<Player>) -> Vec<String> {
         result.push(player.name.clone());
     }
     result
+}
+
+fn repeat_component(components: &Vec<MatchComponent>, player: Player) -> bool {
+    for component in components {
+        if component.player.clone() == player.clone() {
+            return true;
+        }
+    }
+    false
 }
 
 impl eframe::App for CompeteApp {
@@ -147,23 +155,46 @@ impl eframe::App for CompeteApp {
                 }
             );
 
+            let mut mat_index = 0;
             for mat in &(matches.clone()) {
+                let mut components = mat.components.clone();
+
                 egui::Window::new(format!("Match {}", mat.id))
                     .show(ctx, |mui| {
                         let mut alternatives: Vec<&str> = vec![];
                         for player in &players {
                             alternatives.push(&(player.name));
                         }
-                        egui::ComboBox::from_id_source(mat.id)
-                            .selected_text(alternatives[self.selected])
-                            .show_index(
-                                mui,
-                                &mut self.selected,
-                                alternatives.len(),
-                                |i| alternatives[i]
-                            );
+                        mui.horizontal(
+                            |hui| {
+                                egui::ComboBox::from_id_source(mat.id)
+                                    .selected_text(alternatives[self.selected])
+                                    .show_index(
+                                        hui,
+                                        &mut self.selected,
+                                        alternatives.len(),
+                                        |i| alternatives[i]
+                                    );
+                                
+                                let skip = repeat_component(&(components.clone()), (&players[self.selected]).clone());
+                                if hui.button("Hello").clicked() && !skip {
+                                    components.push(
+                                            MatchComponent {
+                                            player: (&players[self.selected]).clone(),
+                                            score: 0,
+                                        }
+                                    );
+                                }
+                            }
+                        );
+                        for component in &components {
+                            mui.label(component.player.name.clone());
+                        }
                     }
                 );
+
+                matches[mat_index].components = components;
+                mat_index += 1;
             }
         });
 
