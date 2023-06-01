@@ -177,7 +177,7 @@ impl eframe::App for CompeteApp {
                                     );
                                 
                                 let skip = repeat_component(&(components.clone()), (&players[self.selected]).clone());
-                                if hui.button("Hello").clicked() && !skip {
+                                if hui.button("Add").clicked() && !skip {
                                     components.push(
                                             MatchComponent {
                                             player: (&players[self.selected]).clone(),
