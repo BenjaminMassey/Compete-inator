@@ -89,13 +89,17 @@ impl eframe::App for CompeteApp {
                 self.next_match_id += 1;
             } // TODO: messaging of some sort when no players failure
             egui::Window::new("Players").show(ctx, |pui| {
-                for player in &(self.players.clone()) {
+                let mut dead_players = vec![];
+                for player in &self.players {
                     pui.horizontal(|hui| {
-                        hui.label(player.name.clone());
+                        hui.label(&player.name);
                         if hui.button("🗑").clicked() {
-                            delete_player_by_id(&mut self.players, player.id);
+                            dead_players.push(player.id);
                         }
                     });
+                }
+                for player_id in dead_players {
+                    delete_player_by_id(&mut self.players, player_id);
                 }
                 let response = pui.add(
                     egui::TextEdit::singleline(&mut self.player_edit_result)
@@ -116,14 +120,14 @@ impl eframe::App for CompeteApp {
 
             for mat in &mut self.matches {
                 egui::Window::new(format!("Match {}", mat.id)).show(ctx, |mui| {
-                    if mat.winner.is_some() {
+                    if let Some(winner) = mat.winner.as_ref() {
                         let versus: String = mat.components
                             .iter()
                             .map(|c| c.player.name.clone())
                             .collect::<Vec<String>>()
                             .join(" vs ");
                         mui.label(versus);
-                        mui.label(format!("{} won!", mat.winner.clone().unwrap().name));
+                        mui.label(format!("{} won!", winner.name));
                     } else {
                         let mut alternatives: Vec<&str> = vec![];
                         for player in &self.players {
@@ -148,8 +152,9 @@ impl eframe::App for CompeteApp {
                         });
                         for component in &mat.components {
                             mui.horizontal(|hui| {
-                                hui.label(component.player.name.clone());
+                                hui.label(&component.player.name);
                                 if mat.winner.is_none() && hui.button("Declare Winner").clicked() {
+                                    // FIXME: winner should be option id.
                                     mat.winner = Some(component.player.clone());
                                 }
                             });
