@@ -21,7 +21,7 @@ impl Player {
     fn new(player_name: String, player_id: i32) -> Self {
         Player {
             id: player_id,
-            name: player_name.clone(),
+            name: player_name,
         }
     }
 }
@@ -29,7 +29,7 @@ impl Player {
 #[derive(Default, Clone)]
 struct MatchComponent {
     player: Player,
-    score: i32,
+    score: i32, // TODO: use this
 }
 
 #[derive(Clone)]
@@ -85,7 +85,7 @@ impl CompeteApp {
 fn get_player_by_name(vector: &Vec<Player>, player_name: String) -> Option<Player>{
     for item in vector {
         if item.name == player_name.clone() {
-            Some(item);
+            return Some(item.clone());
         }
     }
     None
@@ -127,7 +127,7 @@ impl eframe::App for CompeteApp {
             .show(ctx, |cui| {
                 cui.heading("Compete-inator");
                 cui.separator();
-                if cui.button("Create Match").clicked() && players.len() > 0 {
+                if cui.button("Create Match").clicked() && !players.is_empty() {
                      matches.push(Match::new(self.match_count));
                      self.match_count += 1;
                 } // TODO: messaging of some sort when no players failure
@@ -146,7 +146,7 @@ impl eframe::App for CompeteApp {
                             .hint_text("Enter player name...")
                     );
                     if response.lost_focus() && pui.input(|i| i.key_pressed(egui::Key::Enter))
-                        && self.player_edit_result.len() > 0 {
+                        && !self.player_edit_result.is_empty() {
                         players.push(
                             Player::new(
                                 self.player_edit_result.clone(),
@@ -175,7 +175,7 @@ impl eframe::App for CompeteApp {
                             mui.label(
                                 format!(
                                     "{} won!",
-                                    (&winner).clone().unwrap().name.clone()
+                                    winner.clone().unwrap().name
                                 )
                             );
                         }
@@ -195,11 +195,11 @@ impl eframe::App for CompeteApp {
                                             |i| alternatives[i]
                                     );
                                     
-                                    let skip = repeat_component(&(components.clone()), (&players[self.selected]).clone());
+                                    let skip = repeat_component(&(components.clone()), players[self.selected].clone());
                                     if hui.button("Add").clicked() && !skip {
                                         components.push(
                                                 MatchComponent {
-                                                player: (&players[self.selected]).clone(),
+                                                player: players[self.selected].clone(),
                                                 score: 0,
                                             }
                                         );
