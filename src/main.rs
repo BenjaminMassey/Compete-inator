@@ -1,5 +1,4 @@
 use eframe::egui;
-use substring::Substring;
 
 fn main() {
     let native_options = eframe::NativeOptions::default();
@@ -159,11 +158,12 @@ impl eframe::App for CompeteApp {
 
                 egui::Window::new(format!("Match {}", mat.id)).show(ctx, |mui| {
                     if winner.is_some() {
-                        let mut versus = "".to_string();
-                        for component in components.clone() {
-                            versus = format!("{} vs {}", versus, component.player.name.clone());
-                        }
-                        mui.label(versus.substring(4, versus.len()));
+                        let versus: String = components
+                            .iter()
+                            .map(|c| c.player.name.clone())
+                            .collect::<Vec<String>>()
+                            .join(" vs ");
+                        mui.label(versus);
                         mui.label(format!("{} won!", winner.clone().unwrap().name));
                     } else {
                         let mut alternatives: Vec<&str> = vec![];
