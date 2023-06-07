@@ -42,7 +42,7 @@ impl MatchComponent {
 struct Match {
     id: i32,
     components: Vec<MatchComponent>,
-    winner: Option<Player>,
+    winner: Option<i32>,
 }
 
 impl Match {
@@ -73,6 +73,10 @@ impl CompeteApp {
 
 fn delete_player_by_id(players: &mut Vec<Player>, player_id: i32) {
     players.retain(|p| p.id != player_id);
+}
+
+fn get_player_by_id(players: &[Player], player_id: i32) -> &Player {
+    players.iter().find(|p| p.id == player_id).unwrap()
 }
 
 fn repeat_component(components: &[MatchComponent], player: &Player) -> bool {
@@ -120,13 +124,14 @@ impl eframe::App for CompeteApp {
 
             for mat in &mut self.matches {
                 egui::Window::new(format!("Match {}", mat.id)).show(ctx, |mui| {
-                    if let Some(winner) = mat.winner.as_ref() {
+                    if let Some(winner) = mat.winner {
                         let versus: String = mat.components
                             .iter()
                             .map(|c| c.player.name.clone())
                             .collect::<Vec<String>>()
                             .join(" vs ");
                         mui.label(versus);
+                        let winner = get_player_by_id(&self.players, winner);
                         mui.label(format!("{} won!", winner.name));
                     } else {
                         let mut alternatives: Vec<&str> = vec![];
@@ -153,9 +158,9 @@ impl eframe::App for CompeteApp {
                         for component in &mat.components {
                             mui.horizontal(|hui| {
                                 hui.label(&component.player.name);
-                                if mat.winner.is_none() && hui.button("Declare Winner").clicked() {
-                                    // FIXME: winner should be option id.
-                                    mat.winner = Some(component.player.clone());
+                                if hui.button("Declare Winner").clicked() {
+                                    assert!(mat.winner.is_none(), "too many winners");
+                                    mat.winner = Some(component.player.id);
                                 }
                             });
                         }
