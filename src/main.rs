@@ -17,10 +17,10 @@ struct Player {
 }
 
 impl Player {
-    fn new(player_name: String, player_id: i32) -> Self {
+    fn new(player_name: &str, player_id: i32) -> Self {
         Player {
             id: player_id,
-            name: player_name,
+            name: player_name.to_owned(),
         }
     }
 }
@@ -30,6 +30,15 @@ struct MatchComponent {
     player: Player,
     #[allow(unused)]
     score: i32, // TODO: use this
+}
+
+impl MatchComponent {
+    fn new(player: &Player) -> Self {
+        MatchComponent {
+            player: player.clone(),
+            score: 0,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -47,17 +56,15 @@ impl Match {
             winner: None,
         }
     }
-    fn _new_with_players(players: &Vec<Player>, match_id: i32) -> Self {
-        let mut c = vec![];
-        for player in players {
-            c.push(MatchComponent {
-                player: player.clone(),
-                score: 0,
-            });
-        }
+
+    fn _new_with_players(players: &[Player], match_id: i32) -> Self {
+        let components: Vec<_> = players
+            .iter()
+            .map(MatchComponent::new)
+            .collect();
         Match {
             id: match_id,
-            components: c,
+            components,
             winner: None,
         }
     }
@@ -65,9 +72,9 @@ impl Match {
 
 #[derive(Default)]
 struct CompeteApp {
-    player_count: i32,
+    next_player_id: i32,
     players: Vec<Player>,
-    match_count: i32,
+    next_match_id: i32,
     matches: Vec<Match>,
     player_edit_result: String,
     selected: usize,
@@ -79,23 +86,17 @@ impl CompeteApp {
     }
 }
 
-fn _get_player_by_name(vector: &Vec<Player>, player_name: String) -> Option<Player> {
+fn _get_player_by_name(vector: &Vec<Player>, player_name: &str) -> Option<Player> {
     for item in vector {
-        if item.name == player_name.clone() {
+        if item.name == player_name {
             return Some(item.clone());
         }
     }
     None
 }
 
-fn delete_player_by_id(vector: &Vec<Player>, player_id: i32) -> Vec<Player> {
-    let mut result: Vec<Player> = vec![];
-    for item in vector {
-        if item.id != player_id {
-            result.push(item.clone());
-        }
-    }
-    result
+fn delete_player_by_id(players: &mut Vec<Player>, player_id: i32) {
+    players.retain(|p| p.id != player_id);
 }
 
 fn _players_to_strings(players: &Vec<Player>) -> Vec<String> {
@@ -106,13 +107,8 @@ fn _players_to_strings(players: &Vec<Player>) -> Vec<String> {
     result
 }
 
-fn repeat_component(components: &Vec<MatchComponent>, player: Player) -> bool {
-    for component in components {
-        if component.player.clone() == player.clone() {
-            return true;
-        }
-    }
-    false
+fn repeat_component(components: &[MatchComponent], player: &Player) -> bool {
+    components.iter().any(|mc| &mc.player == player)
 }
 
 impl eframe::App for CompeteApp {
@@ -124,15 +120,15 @@ impl eframe::App for CompeteApp {
             cui.heading("Compete-inator");
             cui.separator();
             if cui.button("Create Match").clicked() && !players.is_empty() {
-                matches.push(Match::new(self.match_count));
-                self.match_count += 1;
+                matches.push(Match::new(self.next_match_id));
+                self.next_match_id += 1;
             } // TODO: messaging of some sort when no players failure
             egui::Window::new("Players").show(ctx, |pui| {
                 for player in &(players.clone()) {
                     pui.horizontal(|hui| {
                         hui.label(player.name.clone());
                         if hui.button("🗑").clicked() {
-                            players = delete_player_by_id(&(players.clone()), player.id);
+                            delete_player_by_id(&mut players, player.id);
                         }
                     });
                 }
@@ -145,10 +141,10 @@ impl eframe::App for CompeteApp {
                     && !self.player_edit_result.is_empty()
                 {
                     players.push(Player::new(
-                        self.player_edit_result.clone(),
-                        self.player_count,
+                        &self.player_edit_result,
+                        self.next_player_id,
                     ));
-                    self.player_count += 1;
+                    self.next_player_id += 1;
                     self.player_edit_result = "".to_string();
                 }
             });
@@ -179,14 +175,13 @@ impl eframe::App for CompeteApp {
                                 });
 
                             let skip = repeat_component(
-                                &(components.clone()),
-                                players[self.selected].clone(),
+                                &components,
+                                &players[self.selected],
                             );
                             if hui.button("Add").clicked() && !skip {
-                                components.push(MatchComponent {
-                                    player: players[self.selected].clone(),
-                                    score: 0,
-                                });
+                                components.push(MatchComponent::new(
+                                    &players[self.selected]
+                                ));
                             }
                         });
                         for component in &components {
