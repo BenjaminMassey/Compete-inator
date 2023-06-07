@@ -113,22 +113,19 @@ fn repeat_component(components: &[MatchComponent], player: &Player) -> bool {
 
 impl eframe::App for CompeteApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut players = self.players.clone();
-        let mut matches = self.matches.clone();
-
         egui::CentralPanel::default().show(ctx, |cui| {
             cui.heading("Compete-inator");
             cui.separator();
-            if cui.button("Create Match").clicked() && !players.is_empty() {
-                matches.push(Match::new(self.next_match_id));
+            if cui.button("Create Match").clicked() && !self.players.is_empty() {
+                self.matches.push(Match::new(self.next_match_id));
                 self.next_match_id += 1;
             } // TODO: messaging of some sort when no players failure
             egui::Window::new("Players").show(ctx, |pui| {
-                for player in &(players.clone()) {
+                for player in &(self.players.clone()) {
                     pui.horizontal(|hui| {
                         hui.label(player.name.clone());
                         if hui.button("🗑").clicked() {
-                            delete_player_by_id(&mut players, player.id);
+                            delete_player_by_id(&mut self.players, player.id);
                         }
                     });
                 }
@@ -140,7 +137,7 @@ impl eframe::App for CompeteApp {
                     && pui.input(|i| i.key_pressed(egui::Key::Enter))
                     && !self.player_edit_result.is_empty()
                 {
-                    players.push(Player::new(
+                    self.players.push(Player::new(
                         &self.player_edit_result,
                         self.next_player_id,
                     ));
@@ -149,22 +146,19 @@ impl eframe::App for CompeteApp {
                 }
             });
 
-            for mat in &mut matches {
-                let mut components = mat.components.clone();
-                let mut winner: Option<Player> = mat.winner.clone();
-
+            for mat in &mut self.matches {
                 egui::Window::new(format!("Match {}", mat.id)).show(ctx, |mui| {
-                    if winner.is_some() {
-                        let versus: String = components
+                    if mat.winner.is_some() {
+                        let versus: String = mat.components
                             .iter()
                             .map(|c| c.player.name.clone())
                             .collect::<Vec<String>>()
                             .join(" vs ");
                         mui.label(versus);
-                        mui.label(format!("{} won!", winner.clone().unwrap().name));
+                        mui.label(format!("{} won!", mat.winner.clone().unwrap().name));
                     } else {
                         let mut alternatives: Vec<&str> = vec![];
-                        for player in &players {
+                        for player in &self.players {
                             alternatives.push(&(player.name));
                         }
                         mui.horizontal(|hui| {
@@ -175,32 +169,26 @@ impl eframe::App for CompeteApp {
                                 });
 
                             let skip = repeat_component(
-                                &components,
-                                &players[self.selected],
+                                &mat.components,
+                                &self.players[self.selected],
                             );
                             if hui.button("Add").clicked() && !skip {
-                                components.push(MatchComponent::new(
-                                    &players[self.selected]
+                                mat.components.push(MatchComponent::new(
+                                    &self.players[self.selected]
                                 ));
                             }
                         });
-                        for component in &components {
+                        for component in &mat.components {
                             mui.horizontal(|hui| {
                                 hui.label(component.player.name.clone());
-                                if winner.is_none() && hui.button("Declare Winner").clicked() {
-                                    winner = Some(component.player.clone());
+                                if mat.winner.is_none() && hui.button("Declare Winner").clicked() {
+                                    mat.winner = Some(component.player.clone());
                                 }
                             });
                         }
                     }
                 });
-
-                mat.components = components;
-                mat.winner = winner;
             }
         });
-
-        self.players = players;
-        self.matches = matches;
     }
 }
