@@ -3,14 +3,6 @@
 version = 3
 
 [[package]]
-name = "Compete-inator"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui",
-]
-
-[[package]]
 name = "ab_glyph"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -300,6 +292,14 @@ checksum = "35ed6e9d84f0b51a7f52daf1c7d71dd136fd7a3f41a8462b8cdb8c78d920fad4"
 dependencies = [
  "bytes",
  "memchr",
+]
+
+[[package]]
+name = "compete-inator"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "egui",
 ]
 
 [[package]]

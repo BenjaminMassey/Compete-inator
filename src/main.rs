@@ -6,7 +6,8 @@ fn main() {
         "Compete-inator",
         native_options,
         Box::new(|cc| Box::new(CompeteApp::new(cc))),
-    );
+    )
+    .unwrap();
 }
 
 #[derive(Default, Clone, PartialEq)]
@@ -27,6 +28,7 @@ impl Player {
 #[derive(Default, Clone)]
 struct MatchComponent {
     player: Player,
+    #[allow(unused)]
     score: i32, // TODO: use this
 }
 
@@ -45,7 +47,7 @@ impl Match {
             winner: None,
         }
     }
-    fn new_with_players(players: &Vec<Player>, match_id: i32) -> Self {
+    fn _new_with_players(players: &Vec<Player>, match_id: i32) -> Self {
         let mut c = vec![];
         for player in players {
             c.push(MatchComponent {
@@ -72,12 +74,12 @@ struct CompeteApp {
 }
 
 impl CompeteApp {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self::default()
     }
 }
 
-fn get_player_by_name(vector: &Vec<Player>, player_name: String) -> Option<Player> {
+fn _get_player_by_name(vector: &Vec<Player>, player_name: String) -> Option<Player> {
     for item in vector {
         if item.name == player_name.clone() {
             return Some(item.clone());
@@ -96,7 +98,7 @@ fn delete_player_by_id(vector: &Vec<Player>, player_id: i32) -> Vec<Player> {
     result
 }
 
-fn players_to_strings(players: &Vec<Player>) -> Vec<String> {
+fn _players_to_strings(players: &Vec<Player>) -> Vec<String> {
     let mut result: Vec<String> = vec![];
     for player in players {
         result.push(player.name.clone());
@@ -114,7 +116,7 @@ fn repeat_component(components: &Vec<MatchComponent>, player: Player) -> bool {
 }
 
 impl eframe::App for CompeteApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let mut players = self.players.clone();
         let mut matches = self.matches.clone();
 
@@ -151,8 +153,7 @@ impl eframe::App for CompeteApp {
                 }
             });
 
-            let mut mat_index = 0;
-            for mat in &(matches.clone()) {
+            for mat in &mut matches {
                 let mut components = mat.components.clone();
                 let mut winner: Option<Player> = mat.winner.clone();
 
@@ -199,9 +200,8 @@ impl eframe::App for CompeteApp {
                     }
                 });
 
-                matches[mat_index].components = components;
-                matches[mat_index].winner = winner;
-                mat_index += 1;
+                mat.components = components;
+                mat.winner = winner;
             }
         });
 
