@@ -28,15 +28,12 @@ impl Player {
 #[derive(Default, Clone)]
 struct MatchComponent {
     player: Player,
-    #[allow(unused)]
-    score: i32, // TODO: use this
 }
 
 impl MatchComponent {
     fn new(player: &Player) -> Self {
         MatchComponent {
             player: player.clone(),
-            score: 0,
         }
     }
 }
@@ -53,18 +50,6 @@ impl Match {
         Match {
             id: match_id,
             components: vec![],
-            winner: None,
-        }
-    }
-
-    fn _new_with_players(players: &[Player], match_id: i32) -> Self {
-        let components: Vec<_> = players
-            .iter()
-            .map(MatchComponent::new)
-            .collect();
-        Match {
-            id: match_id,
-            components,
             winner: None,
         }
     }
@@ -86,25 +71,8 @@ impl CompeteApp {
     }
 }
 
-fn _get_player_by_name(vector: &Vec<Player>, player_name: &str) -> Option<Player> {
-    for item in vector {
-        if item.name == player_name {
-            return Some(item.clone());
-        }
-    }
-    None
-}
-
 fn delete_player_by_id(players: &mut Vec<Player>, player_id: i32) {
     players.retain(|p| p.id != player_id);
-}
-
-fn _players_to_strings(players: &Vec<Player>) -> Vec<String> {
-    let mut result: Vec<String> = vec![];
-    for player in players {
-        result.push(player.name.clone());
-    }
-    result
 }
 
 fn repeat_component(components: &[MatchComponent], player: &Player) -> bool {
