@@ -27,11 +27,11 @@ struct Player {
 
 use std::sync::Mutex;
 static PLAYER_IDENT_GENERATOR: Mutex<PlayerIdentGenerator> =
-    Mutex::new(PlayerIdentGenerator::default());
+    Mutex::new(PlayerIdentGenerator::new());
 
 impl Player {
     fn new(player_name: &str) -> Self {
-        let idg = PLAYER_IDENT_GENERATOR.lock().unwrap();
+        let mut idg = PLAYER_IDENT_GENERATOR.lock().unwrap();
         let player_ident = idg.next().unwrap();
         Player {
             ident: player_ident,
@@ -72,12 +72,12 @@ impl Match {
 
 #[derive(Default)]
 struct CompeteApp {
-    next_player_id: i32,
-    players: HashMap<PlayerIdentType, Player>;
-    next_match_id: i32,
+    next_player_id: u32,
+    players: Vec<Player>,
+    next_match_id: u32,
     matches: Vec<Match>,
     player_edit_result: String,
-    selected: usize,
+    selected: PlayerIdent,
 }
 
 impl CompeteApp {
@@ -86,16 +86,16 @@ impl CompeteApp {
     }
 }
 
-fn delete_player_by_id(players: &mut Vec<Player>, player_id: i32) {
-    players.retain(|p| p.id != player_id);
+fn delete_player_by_id(players: &mut Vec<Player>, player_id: PlayerIdent) {
+    players.retain(|p| p.ident != player_id);
 }
 
-fn get_player_by_id(players: &[Player], player_id: i32) -> &Player {
-    players.iter().find(|p| p.id == player_id).unwrap()
+fn get_player_by_id(players: &[Player], player_id: PlayerIdent) -> &Player {
+    players.iter().find(|p| p.ident == player_id).unwrap()
 }
 
-fn repeat_component(components: &[MatchComponent], player: &Player) -> bool {
-    components.iter().any(|mc| &mc.player == player)
+fn repeat_component(components: &[MatchComponent], player: PlayerIdent) -> bool {
+    components.iter().any(|mc| mc.player == player)
 }
 
 impl eframe::App for CompeteApp {
@@ -113,7 +113,7 @@ impl eframe::App for CompeteApp {
                     pui.horizontal(|hui| {
                         hui.label(&player.name);
                         if hui.button("🗑").clicked() {
-                            dead_players.push(player.id);
+                            dead_players.push(player.ident);
                         }
                     });
                 }
@@ -130,7 +130,6 @@ impl eframe::App for CompeteApp {
                 {
                     self.players.push(Player::new(
                         &self.player_edit_result,
-                        self.next_player_id,
                     ));
                     self.next_player_id += 1;
                     self.player_edit_result = "".to_string();
@@ -138,44 +137,56 @@ impl eframe::App for CompeteApp {
             });
 
             for mat in &mut self.matches {
-                egui::Window::new(format!("Match {}", mat.id)).show(ctx, |mui| {
+                egui::Window::new(format!("Match {}", mat.ident)).show(ctx, |mui| {
                     if let Some(winner) = mat.winner {
                         let versus: String = mat.components
                             .iter()
-                            .map(|c| c.player.name.clone())
+                            .map(|c| {
+                                let player = get_player_by_id(
+                                    &self.players,
+                                    c.player,
+                                );
+                                player.name.clone()
+                            })
                             .collect::<Vec<String>>()
                             .join(" vs ");
                         mui.label(versus);
                         let winner = get_player_by_id(&self.players, winner);
                         mui.label(format!("{} won!", winner.name));
                     } else {
-                        let mut alternatives: Vec<&str> = vec![];
-                        for player in &self.players {
-                            alternatives.push(&(player.name));
+                        let mut alternatives: Vec<&Player> = vec![];
+                        let mut selected = None;
+                        for (i, player) in self.players.iter().enumerate() {
+                            alternatives.push(player);
+                            if player.ident == self.selected {
+                                selected = Some(i);
+                            }
                         }
+                        let mut selected = selected.unwrap();
                         mui.horizontal(|hui| {
-                            egui::ComboBox::from_id_source(mat.id)
-                                .selected_text(alternatives[self.selected])
-                                .show_index(hui, &mut self.selected, alternatives.len(), |i| {
-                                    alternatives[i]
+                            egui::ComboBox::from_id_source(mat.ident)
+                                .selected_text(&alternatives[selected].name)
+                                .show_index(hui, &mut selected, alternatives.len(), |i| {
+                                    &alternatives[i].name
                                 });
-
+                            self.selected = alternatives[selected].ident;
                             let skip = repeat_component(
                                 &mat.components,
-                                &self.players[self.selected],
+                                self.selected,
                             );
                             if hui.button("Add").clicked() && !skip {
                                 mat.components.push(MatchComponent::new(
-                                    &self.players[self.selected]
+                                    self.selected
                                 ));
                             }
                         });
                         for component in &mat.components {
                             mui.horizontal(|hui| {
-                                hui.label(&component.player.name);
+                                let player = get_player_by_id(&self.players, component.player);
+                                hui.label(&player.name);
                                 if hui.button("Declare Winner").clicked() {
                                     assert!(mat.winner.is_none(), "too many winners");
-                                    mat.winner = Some(component.player.id);
+                                    mat.winner = Some(player.ident);
                                 }
                             });
                         }

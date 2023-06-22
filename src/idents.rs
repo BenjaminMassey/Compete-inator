@@ -14,10 +14,18 @@ impl<T> Deref for Ident<T> {
     }
 }
 
-#[derive(Default)]
 pub struct IdentGenerator<T> {
     next_ident: u32,
     phantom: PhantomData<T>,
+}
+
+impl<T> IdentGenerator<T> {
+    pub const fn new() -> Self {
+        Self {
+            next_ident: 0,
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<T> Iterator for IdentGenerator<T> {
