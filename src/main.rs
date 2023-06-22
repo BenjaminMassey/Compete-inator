@@ -47,9 +47,7 @@ struct MatchComponent {
 
 impl MatchComponent {
     fn new(player: PlayerIdent) -> Self {
-        MatchComponent {
-            player,
-        }
+        MatchComponent { player }
     }
 }
 
@@ -128,9 +126,7 @@ impl eframe::App for CompeteApp {
                     && pui.input(|i| i.key_pressed(egui::Key::Enter))
                     && !self.player_edit_result.is_empty()
                 {
-                    self.players.push(Player::new(
-                        &self.player_edit_result,
-                    ));
+                    self.players.push(Player::new(&self.player_edit_result));
                     self.next_player_id += 1;
                     self.player_edit_result = "".to_string();
                 }
@@ -139,13 +135,11 @@ impl eframe::App for CompeteApp {
             for mat in &mut self.matches {
                 egui::Window::new(format!("Match {}", mat.ident)).show(ctx, |mui| {
                     if let Some(winner) = mat.winner {
-                        let versus: String = mat.components
+                        let versus: String = mat
+                            .components
                             .iter()
                             .map(|c| {
-                                let player = get_player_by_id(
-                                    &self.players,
-                                    c.player,
-                                );
+                                let player = get_player_by_id(&self.players, c.player);
                                 player.name.clone()
                             })
                             .collect::<Vec<String>>()
@@ -170,14 +164,9 @@ impl eframe::App for CompeteApp {
                                     &alternatives[i].name
                                 });
                             self.selected = alternatives[selected].ident;
-                            let skip = repeat_component(
-                                &mat.components,
-                                self.selected,
-                            );
+                            let skip = repeat_component(&mat.components, self.selected);
                             if hui.button("Add").clicked() && !skip {
-                                mat.components.push(MatchComponent::new(
-                                    self.selected
-                                ));
+                                mat.components.push(MatchComponent::new(self.selected));
                             }
                         });
                         for component in &mat.components {
