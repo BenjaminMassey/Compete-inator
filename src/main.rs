@@ -1,3 +1,6 @@
+mod idents;
+use idents::*;
+
 use eframe::egui;
 
 fn main() {
@@ -10,16 +13,28 @@ fn main() {
     .unwrap();
 }
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
+struct PlayerIdentType;
+
+type PlayerIdent = Ident<PlayerIdentType>;
+type PlayerIdentGenerator = IdentGenerator<PlayerIdentType>;
+
+#[derive(Default, Clone)]
 struct Player {
-    id: i32,
+    ident: PlayerIdent,
     name: String,
 }
 
+use std::sync::Mutex;
+static PLAYER_IDENT_GENERATOR: Mutex<PlayerIdentGenerator> =
+    Mutex::new(PlayerIdentGenerator::default());
+
 impl Player {
-    fn new(player_name: &str, player_id: i32) -> Self {
+    fn new(player_name: &str) -> Self {
+        let idg = PLAYER_IDENT_GENERATOR.lock().unwrap();
+        let player_ident = idg.next().unwrap();
         Player {
-            id: player_id,
+            ident: player_ident,
             name: player_name.to_owned(),
         }
     }
@@ -27,28 +42,28 @@ impl Player {
 
 #[derive(Default, Clone)]
 struct MatchComponent {
-    player: Player,
+    player: PlayerIdent,
 }
 
 impl MatchComponent {
-    fn new(player: &Player) -> Self {
+    fn new(player: PlayerIdent) -> Self {
         MatchComponent {
-            player: player.clone(),
+            player,
         }
     }
 }
 
 #[derive(Clone)]
 struct Match {
-    id: i32,
+    ident: u32,
     components: Vec<MatchComponent>,
-    winner: Option<i32>,
+    winner: Option<PlayerIdent>,
 }
 
 impl Match {
-    fn new(match_id: i32) -> Self {
+    fn new(match_id: u32) -> Self {
         Match {
-            id: match_id,
+            ident: match_id,
             components: vec![],
             winner: None,
         }
@@ -58,7 +73,7 @@ impl Match {
 #[derive(Default)]
 struct CompeteApp {
     next_player_id: i32,
-    players: Vec<Player>,
+    players: HashMap<PlayerIdentType, Player>;
     next_match_id: i32,
     matches: Vec<Match>,
     player_edit_result: String,
