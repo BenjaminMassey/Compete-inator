@@ -146,22 +146,19 @@ impl eframe::App for CompeteApp {
                         let winner = get_player_by_id(&self.players, winner);
                         mui.label(format!("{} won!", winner.name));
                     } else {
-                        let mut alternatives: Vec<&Player> = vec![];
-                        let mut selected = None;
-                        for (i, player) in self.players.iter().enumerate() {
-                            alternatives.push(player);
-                            if player.ident == self.selected {
-                                selected = Some(i);
-                            }
-                        }
-                        let mut selected = selected.unwrap();
+                        let mut selected = self.players
+                            .iter()
+                            .enumerate()
+                            .find(|&(_, p)| p.ident == self.selected)
+                            .unwrap()
+                            .0;
                         mui.horizontal(|hui| {
                             egui::ComboBox::from_id_source(mat.ident)
-                                .selected_text(&alternatives[selected].name)
-                                .show_index(hui, &mut selected, alternatives.len(), |i| {
-                                    &alternatives[i].name
+                                .selected_text(&self.players[selected].name)
+                                .show_index(hui, &mut selected, self.players.len(), |i| {
+                                    &self.players[i].name
                                 });
-                            self.selected = alternatives[selected].ident;
+                            self.selected = self.players[selected].ident;
                             let skip = repeat_component(&mat.components, self.selected);
                             if hui.button("Add").clicked() && !skip {
                                 mat.components.push(MatchComponent::new(self.selected));
