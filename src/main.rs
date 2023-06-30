@@ -25,14 +25,12 @@ struct Player {
     name: String,
 }
 
-use std::sync::Mutex;
-static PLAYER_IDENT_GENERATOR: Mutex<PlayerIdentGenerator> =
-    Mutex::new(PlayerIdentGenerator::new());
+static PLAYER_IDENT_GENERATOR: PlayerIdentGenerator =
+    PlayerIdentGenerator::new();
 
 impl Player {
     fn new(player_name: &str) -> Self {
-        let mut idg = PLAYER_IDENT_GENERATOR.lock().unwrap();
-        let player_ident = idg.next().unwrap();
+        let player_ident = PLAYER_IDENT_GENERATOR.next_ident();
         Player {
             ident: player_ident,
             name: player_name.to_owned(),
