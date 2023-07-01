@@ -4,7 +4,6 @@ use idents::*;
 use std::collections::HashMap;
 use eframe::egui;
 use itertools::Itertools;
-use std::cmp::Ordering;
 use std::ops::Deref;
 
 fn main() {
@@ -23,7 +22,7 @@ struct PlayerIdentType;
 type PlayerIdent = Ident<PlayerIdentType>;
 type PlayerIdentGenerator = IdentGenerator<PlayerIdentType>;
 
-#[derive(Default, Clone, Eq, PartialEq, PartialOrd)]
+#[derive(Default, Clone, Eq, PartialEq, Ord, PartialOrd)]
 struct Player {
     ident: PlayerIdent,
     name: String,
@@ -38,12 +37,6 @@ impl Player {
             ident: PLAYER_IDENT_GENERATOR.next_ident(),
             name: player_name.to_owned(),
         }
-    }
-}
-
-impl Ord for Player {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.ident.cmp(&other.ident)
     }
 }
 
