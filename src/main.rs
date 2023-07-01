@@ -1,9 +1,9 @@
 mod idents;
 use idents::*;
 
-use std::collections::HashMap;
 use eframe::egui;
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::ops::Deref;
 
 fn main() {
@@ -28,8 +28,7 @@ struct Player {
     name: String,
 }
 
-static PLAYER_IDENT_GENERATOR: PlayerIdentGenerator =
-    PlayerIdentGenerator::new();
+static PLAYER_IDENT_GENERATOR: PlayerIdentGenerator = PlayerIdentGenerator::new();
 
 impl Player {
     fn new(player_name: &str) -> Self {
@@ -64,8 +63,7 @@ struct Match {
     winner: Option<PlayerIdent>,
 }
 
-static MATCH_IDENT_GENERATOR: MatchIdentGenerator =
-    MatchIdentGenerator::new();
+static MATCH_IDENT_GENERATOR: MatchIdentGenerator = MatchIdentGenerator::new();
 
 impl Match {
     fn new() -> Self {
@@ -139,26 +137,35 @@ impl eframe::App for CompeteApp {
                         let versus: String = mat
                             .components
                             .iter()
-                            .map(|c| {
-                                self.players[&c.player].name.clone()
-                            })
+                            .map(|c| self.players[&c.player].name.clone())
                             .collect::<Vec<String>>()
                             .join(" vs ");
                         mui.label(versus);
                         mui.label(format!("{} won!", self.players[&winner].name));
                     } else {
                         mui.horizontal(|hui| {
-                            let player_values = &self.players.values().cloned().sorted().collect::<Vec<Player>>();
+                            let player_values = &self
+                                .players
+                                .values()
+                                .cloned()
+                                .sorted()
+                                .collect::<Vec<Player>>();
                             let mut current_selected = self.selected[mid]; // TODO: shouldn't need this before/after thing
                             egui::ComboBox::from_id_source(mat.ident)
                                 .selected_text(&player_values[self.selected[mid]].name)
                                 .show_index(hui, &mut current_selected, self.players.len(), |i| {
                                     &player_values[i].name
-                            });
-                            *self.selected.entry(*mid).or_insert(current_selected) = current_selected; // TODO: above
-                            let skip = repeat_component(&mat.components, player_values[self.selected[mid]].ident);
+                                });
+                            *self.selected.entry(*mid).or_insert(current_selected) =
+                                current_selected; // TODO: above
+                            let skip = repeat_component(
+                                &mat.components,
+                                player_values[self.selected[mid]].ident,
+                            );
                             if hui.button("Add").clicked() && !skip {
-                                mat.components.push(MatchComponent::new(player_values[self.selected[mid]].ident));
+                                mat.components.push(MatchComponent::new(
+                                    player_values[self.selected[mid]].ident,
+                                ));
                             }
                         });
                         for component in &mat.components {

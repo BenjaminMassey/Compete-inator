@@ -1,8 +1,8 @@
+use std::cmp::Ordering;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering::SeqCst;
-use std::cmp::Ordering;
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub struct Ident<T> {
@@ -33,7 +33,7 @@ impl<T: std::cmp::PartialEq> PartialOrd for Ident<T> {
     fn lt(&self, other: &Self) -> bool {
         self.ident < other.ident
     }
-    fn le(&self, other: &Self) -> bool { 
+    fn le(&self, other: &Self) -> bool {
         self.ident <= other.ident
     }
     fn gt(&self, other: &Self) -> bool {
