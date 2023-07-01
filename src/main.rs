@@ -98,12 +98,12 @@ impl eframe::App for CompeteApp {
         egui::CentralPanel::default().show(ctx, |cui| {
             cui.heading("Compete-inator");
             cui.separator();
-            if cui.button("Create Match").clicked() && !self.players.is_empty() {
+            if cui.button("Create Match").clicked() {
                 let new_match = Match::new();
                 let new_ident = new_match.ident;
                 self.matches.insert(new_ident, new_match);
                 self.selected.insert(new_ident, 0);
-            } // TODO: messaging of some sort when no players failure
+            }
             egui::Window::new("Players").show(ctx, |pui| {
                 let mut dead_players = vec![];
                 for ident in self.players.keys().cloned().sorted() {
