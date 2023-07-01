@@ -132,6 +132,7 @@ impl eframe::App for CompeteApp {
             });
 
             for (mid, mat) in &mut self.matches {
+                // TODO: known bug of deleting player when they're added / listed in a match
                 egui::Window::new(format!("Match {:?}", mid.deref())).show(ctx, |mui| {
                     if let Some(winner) = mat.winner {
                         let versus: String = mat
