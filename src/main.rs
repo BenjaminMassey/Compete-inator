@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use eframe::egui;
 use itertools::Itertools;
 use std::cmp::Ordering;
+use std::ops::Deref;
 
 fn main() {
     let native_options = eframe::NativeOptions::default();
@@ -33,9 +34,8 @@ static PLAYER_IDENT_GENERATOR: PlayerIdentGenerator =
 
 impl Player {
     fn new(player_name: &str) -> Self {
-        let player_ident = PLAYER_IDENT_GENERATOR.next_ident();
         Player {
-            ident: player_ident,
+            ident: PLAYER_IDENT_GENERATOR.next_ident(),
             name: player_name.to_owned(),
         }
     }
@@ -58,17 +58,26 @@ impl MatchComponent {
     }
 }
 
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
+struct MatchIdentType;
+
+type MatchIdent = Ident<MatchIdentType>;
+type MatchIdentGenerator = IdentGenerator<MatchIdentType>;
+
 #[derive(Clone)]
 struct Match {
-    ident: u32,
+    ident: MatchIdent,
     components: Vec<MatchComponent>,
     winner: Option<PlayerIdent>,
 }
 
+static MATCH_IDENT_GENERATOR: MatchIdentGenerator =
+    MatchIdentGenerator::new();
+
 impl Match {
-    fn new(match_id: u32) -> Self {
+    fn new() -> Self {
         Match {
-            ident: match_id,
+            ident: MATCH_IDENT_GENERATOR.next_ident(),
             components: vec![],
             winner: None,
         }
@@ -78,8 +87,7 @@ impl Match {
 #[derive(Default)]
 struct CompeteApp {
     players: HashMap<PlayerIdent, Player>,
-    next_match_id: u32,
-    matches: Vec<Match>,
+    matches: HashMap<MatchIdent, Match>,
     player_edit_result: String,
     selected: usize,
 }
@@ -104,8 +112,8 @@ impl eframe::App for CompeteApp {
             cui.heading("Compete-inator");
             cui.separator();
             if cui.button("Create Match").clicked() && !self.players.is_empty() {
-                self.matches.push(Match::new(self.next_match_id));
-                self.next_match_id += 1;
+                let new_match = Match::new();
+                self.matches.insert(new_match.ident, new_match);
             } // TODO: messaging of some sort when no players failure
             egui::Window::new("Players").show(ctx, |pui| {
                 let mut dead_players = vec![];
@@ -134,8 +142,8 @@ impl eframe::App for CompeteApp {
                 }
             });
 
-            for mat in &mut self.matches {
-                egui::Window::new(format!("Match {}", mat.ident)).show(ctx, |mui| {
+            for (mid, mat) in &mut self.matches {
+                egui::Window::new(format!("Match {:?}", mid.deref())).show(ctx, |mui| {
                     if let Some(winner) = mat.winner {
                         let versus: String = mat
                             .components
