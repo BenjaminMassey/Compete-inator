@@ -167,9 +167,12 @@ impl eframe::App for CompeteApp {
                                 let mut current_selected = self.selected[mid]; // TODO: shouldn't need this before/after thing
                                 egui::ComboBox::from_id_source(mat.ident)
                                     .selected_text(&player_values[self.selected[mid]].name)
-                                    .show_index(hui, &mut current_selected, self.players.len(), |i| {
-                                        &player_values[i].name
-                                    });
+                                    .show_index(
+                                        hui,
+                                        &mut current_selected,
+                                        self.players.len(),
+                                        |i| &player_values[i].name,
+                                    );
                                 *self.selected.entry(*mid).or_insert(current_selected) =
                                     current_selected; // TODO: above
                                 let skip = repeat_component(
