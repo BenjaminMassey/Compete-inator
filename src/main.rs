@@ -3,6 +3,8 @@ use idents::*;
 
 use std::collections::HashMap;
 use eframe::egui;
+use itertools::Itertools;
+use std::cmp::Ordering;
 
 fn main() {
     let native_options = eframe::NativeOptions::default();
@@ -20,7 +22,7 @@ struct PlayerIdentType;
 type PlayerIdent = Ident<PlayerIdentType>;
 type PlayerIdentGenerator = IdentGenerator<PlayerIdentType>;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Eq, PartialEq, PartialOrd)]
 struct Player {
     ident: PlayerIdent,
     name: String,
@@ -36,6 +38,12 @@ impl Player {
             ident: player_ident,
             name: player_name.to_owned(),
         }
+    }
+}
+
+impl Ord for Player {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.ident.cmp(&other.ident)
     }
 }
 
@@ -101,9 +109,9 @@ impl eframe::App for CompeteApp {
             } // TODO: messaging of some sort when no players failure
             egui::Window::new("Players").show(ctx, |pui| {
                 let mut dead_players = vec![];
-                for (ident, player) in self.players.clone() {
+                for ident in self.players.keys().cloned().sorted() {
                     pui.horizontal(|hui| {
-                        hui.label(&player.name);
+                        hui.label(&self.players[&ident].name);
                         if hui.button("🗑").clicked() {
                             dead_players.push(ident);
                         }
@@ -141,7 +149,7 @@ impl eframe::App for CompeteApp {
                         mui.label(format!("{} won!", self.players[&winner].name));
                     } else {
                         mui.horizontal(|hui| {
-                            let player_values = &self.players.values().cloned().collect::<Vec<Player>>();
+                            let player_values = &self.players.values().cloned().sorted().collect::<Vec<Player>>();
                             egui::ComboBox::from_id_source(mat.ident)
                                 .selected_text(&player_values[self.selected].name)
                                 .show_index(hui, &mut self.selected, self.players.len(), |i| {
