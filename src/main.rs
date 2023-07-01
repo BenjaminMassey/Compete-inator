@@ -97,11 +97,7 @@ impl CompeteApp {
         Self::default()
     }
 }
-/* TODO: delete
-fn delete_player_by_id(players: &mut Vec<Player>, player_id: PlayerIdent) {
-    players.retain(|p| p.ident != player_id);
-}
-*/
+
 fn repeat_component(components: &[MatchComponent], player: PlayerIdent) -> bool {
     components.iter().any(|mc| mc.player == player)
 }
