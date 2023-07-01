@@ -89,7 +89,7 @@ struct CompeteApp {
     players: HashMap<PlayerIdent, Player>,
     matches: HashMap<MatchIdent, Match>,
     player_edit_result: String,
-    selected: usize,
+    selected: HashMap<MatchIdent, usize>,
 }
 
 impl CompeteApp {
@@ -113,7 +113,9 @@ impl eframe::App for CompeteApp {
             cui.separator();
             if cui.button("Create Match").clicked() && !self.players.is_empty() {
                 let new_match = Match::new();
-                self.matches.insert(new_match.ident, new_match);
+                let new_ident = new_match.ident;
+                self.matches.insert(new_ident, new_match);
+                self.selected.insert(new_ident, 0);
             } // TODO: messaging of some sort when no players failure
             egui::Window::new("Players").show(ctx, |pui| {
                 let mut dead_players = vec![];
@@ -158,14 +160,16 @@ impl eframe::App for CompeteApp {
                     } else {
                         mui.horizontal(|hui| {
                             let player_values = &self.players.values().cloned().sorted().collect::<Vec<Player>>();
+                            let mut current_selected = self.selected[mid]; // TODO: shouldn't need this before/after thing
                             egui::ComboBox::from_id_source(mat.ident)
-                                .selected_text(&player_values[self.selected].name)
-                                .show_index(hui, &mut self.selected, self.players.len(), |i| {
+                                .selected_text(&player_values[self.selected[mid]].name)
+                                .show_index(hui, &mut current_selected, self.players.len(), |i| {
                                     &player_values[i].name
                             });
-                            let skip = repeat_component(&mat.components, player_values[self.selected].ident);
+                            *self.selected.entry(*mid).or_insert(current_selected) = current_selected; // TODO: above
+                            let skip = repeat_component(&mat.components, player_values[self.selected[mid]].ident);
                             if hui.button("Add").clicked() && !skip {
-                                mat.components.push(MatchComponent::new(player_values[self.selected].ident));
+                                mat.components.push(MatchComponent::new(player_values[self.selected[mid]].ident));
                             }
                         });
                         for component in &mat.components {
