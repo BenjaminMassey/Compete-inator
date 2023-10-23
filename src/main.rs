@@ -4,6 +4,7 @@ use idents::*;
 use eframe::egui;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::fs;
 use std::ops::Deref;
 
 fn main() {
@@ -93,6 +94,30 @@ fn repeat_component(components: &[MatchComponent], player: PlayerIdent) -> bool 
     components.iter().any(|mc| mc.player == player)
 }
 
+fn write_matches(
+    file_path: &str, 
+    players: &HashMap<PlayerIdent, Player>,
+    matches: &HashMap<MatchIdent, Match>,
+) {
+    let mut content: Vec<HashMap<String, f32>> = vec![];
+    for (_key, value) in matches.iter() {
+        let mut entry: HashMap<String, f32> = Default::default();
+        let winner = value.winner;
+        for component in &value.components {
+            let is_winner =
+                if winner.is_some () { winner.unwrap() == component.player }
+                else { false };
+            entry.insert(
+                players[&component.player].name.clone(),
+                if is_winner { 1f32 } else { 0f32 }
+            );
+        }
+        content.push(entry);
+    }
+    let result = serde_json::to_string_pretty(&content).unwrap();
+    let _ = fs::write(file_path, result);
+}
+
 impl eframe::App for CompeteApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |cui| {
@@ -103,6 +128,9 @@ impl eframe::App for CompeteApp {
                 let new_ident = new_match.ident;
                 self.matches.insert(new_ident, new_match);
                 self.selected.insert(new_ident, 0);
+            }
+            if cui.button("Save Matches").clicked() {
+                write_matches("test-content.json", &self.players, &self.matches);
             }
             egui::Window::new("Players").show(ctx, |pui| {
                 let mut dead_players = vec![];
