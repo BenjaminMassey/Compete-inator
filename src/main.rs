@@ -95,7 +95,7 @@ fn repeat_component(components: &[MatchComponent], player: PlayerIdent) -> bool 
 }
 
 fn write_matches(
-    file_path: &str, 
+    file_path: &str,
     players: &HashMap<PlayerIdent, Player>,
     matches: &HashMap<MatchIdent, Match>,
 ) {
@@ -104,12 +104,14 @@ fn write_matches(
         let mut entry: HashMap<String, f32> = Default::default();
         let winner = value.winner;
         for component in &value.components {
-            let is_winner =
-                if winner.is_some () { winner.unwrap() == component.player }
-                else { false };
+            let is_winner = if winner.is_some() {
+                winner.unwrap() == component.player
+            } else {
+                false
+            };
             entry.insert(
                 players[&component.player].name.clone(),
-                if is_winner { 1f32 } else { 0f32 }
+                if is_winner { 1f32 } else { 0f32 },
             );
         }
         content.push(entry);
@@ -118,13 +120,14 @@ fn write_matches(
     let _ = fs::write(file_path, result);
 }
 
-fn read_matches (
-    file_path: &str, 
+fn read_matches(
+    file_path: &str,
     players: &mut HashMap<PlayerIdent, Player>,
     matches: &mut HashMap<MatchIdent, Match>,
 ) {
     let data = fs::read_to_string(file_path).expect("Unable to read file");
-    let content: Vec<HashMap<String, f32>> = serde_json::from_str(&data).expect("Unable to parse JSON");
+    let content: Vec<HashMap<String, f32>> =
+        serde_json::from_str(&data).expect("Unable to parse JSON");
     for section in &content {
         let mut new_match = Match::new();
         let match_ident = new_match.ident;
@@ -136,7 +139,9 @@ fn read_matches (
                 player_ident = Some(new_player.ident);
                 players.insert(new_player.ident, new_player);
             }
-            new_match.components.push(MatchComponent::new(player_ident.unwrap()));
+            new_match
+                .components
+                .push(MatchComponent::new(player_ident.unwrap()));
             if value > &winning_score {
                 winning_score = *value;
                 new_match.winner = Some(player_ident.unwrap());
