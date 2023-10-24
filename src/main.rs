@@ -104,8 +104,8 @@ fn write_matches(
         let mut entry: HashMap<String, f32> = Default::default();
         let winner = value.winner;
         for component in &value.components {
-            let is_winner = if winner.is_some() {
-                winner.unwrap() == component.player
+            let is_winner = if let Some(winning_player) = winner {
+                winning_player == component.player
             } else {
                 false
             };
@@ -133,9 +133,9 @@ fn read_matches(
         let match_ident = new_match.ident;
         let mut winning_score = -1f32;
         for (key, value) in section.iter() {
-            let mut player_ident = get_player_by_name(&players, &key);
+            let mut player_ident = get_player_by_name(players, key);
             if player_ident.is_none() {
-                let new_player = Player::new(&key);
+                let new_player = Player::new(key);
                 player_ident = Some(new_player.ident);
                 players.insert(new_player.ident, new_player);
             }
@@ -153,7 +153,7 @@ fn read_matches(
 
 fn get_player_by_name(players: &HashMap<PlayerIdent, Player>, search: &str) -> Option<PlayerIdent> {
     for (key, value) in players {
-        if &value.name == search {
+        if value.name == search {
             return Some(*key);
         }
     }
