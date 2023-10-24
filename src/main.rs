@@ -118,6 +118,43 @@ fn write_matches(
     let _ = fs::write(file_path, result);
 }
 
+fn read_matches (
+    file_path: &str, 
+    players: &mut HashMap<PlayerIdent, Player>,
+    matches: &mut HashMap<MatchIdent, Match>,
+) {
+    let data = fs::read_to_string(file_path).expect("Unable to read file");
+    let content: Vec<HashMap<String, f32>> = serde_json::from_str(&data).expect("Unable to parse JSON");
+    for section in &content {
+        let mut new_match = Match::new();
+        let match_ident = new_match.ident;
+        let mut winning_score = -1f32;
+        for (key, value) in section.iter() {
+            let mut player_ident = get_player_by_name(&players, &key);
+            if player_ident.is_none() {
+                let new_player = Player::new(&key);
+                player_ident = Some(new_player.ident);
+                players.insert(new_player.ident, new_player);
+            }
+            new_match.components.push(MatchComponent::new(player_ident.unwrap()));
+            if value > &winning_score {
+                winning_score = *value;
+                new_match.winner = Some(player_ident.unwrap());
+            }
+        }
+        matches.insert(match_ident, new_match);
+    }
+}
+
+fn get_player_by_name(players: &HashMap<PlayerIdent, Player>, search: &str) -> Option<PlayerIdent> {
+    for (key, value) in players {
+        if &value.name == search {
+            return Some(*key);
+        }
+    }
+    None
+}
+
 impl eframe::App for CompeteApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |cui| {
@@ -128,6 +165,9 @@ impl eframe::App for CompeteApp {
                 let new_ident = new_match.ident;
                 self.matches.insert(new_ident, new_match);
                 self.selected.insert(new_ident, 0);
+            }
+            if cui.button("Load Matches").clicked() {
+                read_matches("content.json", &mut self.players, &mut self.matches);
             }
             if cui.button("Save Matches").clicked() {
                 write_matches("test-content.json", &self.players, &self.matches);
