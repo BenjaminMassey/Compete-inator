@@ -167,10 +167,10 @@ impl eframe::App for CompeteApp {
                 self.selected.insert(new_ident, 0);
             }
             if cui.button("Load Matches").clicked() {
-                read_matches("content.json", &mut self.players, &mut self.matches);
+                read_matches("input.json", &mut self.players, &mut self.matches);
             }
             if cui.button("Save Matches").clicked() {
-                write_matches("test-content.json", &self.players, &self.matches);
+                write_matches("output.json", &self.players, &self.matches);
             }
             egui::Window::new("Players").show(ctx, |pui| {
                 let mut dead_players = vec![];
